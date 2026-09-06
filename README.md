@@ -219,6 +219,39 @@ test (Sharpe 1.12) than either neighboring value tested.
 
 `config.py` has been updated with `ENTRY_ZSCORE=1.25`, `EXIT_ZSCORE=-0.5`.
 
+## Results
+
+Full-sample backtest, 2015-10-01 to 2025-08-29 (2,493 trading days).
+Z-score thresholds (`ENTRY_ZSCORE=1.25`, `EXIT_ZSCORE=-0.5`) were tuned via
+a chronological train/test split, not picked by eye or fit to the full
+sample; see Build order for methodology.
+
+| Metric | Value |
+|---|---|
+| Sharpe | 1.28 |
+| Calmar | 1.79 |
+| Max drawdown | -31.5% of notional |
+| Win rate (active days) | 53.4% |
+| Round-trip trades | 36 |
+| Days in position | 947 / 2,493 (38%) |
+
+Implied correlation spiked to roughly 0.83 during the March 2020 COVID
+selloff, in line with the well-documented pattern of realized correlation
+briefly overshooting implied during systemic panics, a useful sanity check
+that the pipeline is capturing something real rather than an artifact.
+
+**What this does and doesn't show:** the backtest is a variance-notional
+approximation (`notional × daily change in raw correlation`), not real
+option position P&L with actual vega exposure, rolls, or margin, so the
+dollar PnL figure in `backtest.py`'s raw output isn't a percentage return
+and shouldn't be read as one. Sharpe, Calmar, and drawdown-as-percent-of-
+notional are the metrics that are actually meaningful and comparable across
+strategies. 36 trades over roughly 10 years is a thin sample for a precise
+Sharpe estimate; the honest claim is that a real, positive signal exists in
+the implied-vs-realized correlation spread, not that 1.28 is a number this
+specific strategy will reproduce going forward. See "Known simplifications"
+below for what a more realistic version would need to add.
+
 ## Known simplifications
 
 - **Single average correlation.** Standard practice; see the note above.
