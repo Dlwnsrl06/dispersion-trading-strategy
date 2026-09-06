@@ -27,7 +27,7 @@ import config
 from correlation_snapshot import compute_correlation_snapshot
 
 
-DEFAULT_STRADDLES_PATH = "data/atm_straddles.csv"
+DEFAULT_STRADDLES_PATH = "data/atm_straddles.parquet"
 DEFAULT_WEIGHTS_PATH = "data/quarterly_weights.csv"
 DEFAULT_OUTPUT_PATH = "data/correlation_history.csv"
 DEFAULT_PRICE_CACHE_PATH = "data/historical_closes_yfinance.csv"
@@ -66,11 +66,8 @@ def load_atm_iv_by_date(
     max_dte = config.MAX_DAYS_TO_EXPIRY if max_dte is None else max_dte
     target_dte = config.REALIZED_LOOKBACK_DAYS if target_dte is None else target_dte
 
-    df = pd.read_csv(
-        _resolve_path(path),
-        parse_dates=["date", "exdate"],
-        dtype={"ticker": "string"},
-    )
+    df = pd.read_parquet(_resolve_path(path))
+    df["ticker"] = df["ticker"].astype("string")
 
     df["dte"] = (df["exdate"] - df["date"]).dt.days
     df = df[df["dte"].between(min_dte, max_dte)].copy()
@@ -228,16 +225,11 @@ def _download_yahoo_close_series(ticker, start, end):
 
 
 def get_download_universe(straddles_path=DEFAULT_STRADDLES_PATH):
-    """
-    Read only the small columns needed to decide the price download
-    universe and date range.
-    """
-    df = pd.read_csv(
+    df = pd.read_parquet(
         _resolve_path(straddles_path),
-        usecols=["date", "ticker"],
-        parse_dates=["date"],
-        dtype={"ticker": "string"},
+        columns=["date", "ticker"],
     )
+    df["ticker"] = df["ticker"].astype("string")
     tickers = sorted(set(df["ticker"].dropna()) | {config.INDEX_TICKER})
     start = df["date"].min() - pd.Timedelta(days=config.REALIZED_LOOKBACK_DAYS * 3)
     end = df["date"].max() + pd.Timedelta(days=1)

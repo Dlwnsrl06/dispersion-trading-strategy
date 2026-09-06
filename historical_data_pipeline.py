@@ -11,11 +11,9 @@ import pandas as pd
 
 
 def load_options_data(filepath: str) -> pd.DataFrame:
-    df = pd.read_csv(
-        filepath,
-        dtype={"optionid": "int64", "secid": "int64"},
-        parse_dates=["date", "exdate"],
-    )
+    df = pd.read_parquet(filepath)
+    df["optionid"] = df["optionid"].astype("int64")
+    df["secid"] = df["secid"].astype("int64")
     return df
 
 
@@ -61,16 +59,10 @@ def select_atm_straddle(df: pd.DataFrame) -> pd.DataFrame:
     return straddles
 
 def get_atm_straddles(
-    source_path: str = "data/options_historical_data_full.csv",
-    cache_path: str = "data/atm_straddles.csv",
+    source_path: str = "data/options_historical_data_full.parquet",
+    cache_path: str = "data/atm_straddles.parquet",
     force_rebuild: bool = False,
 ) -> pd.DataFrame:
-    """
-    Returns the ATM straddle table, rebuilding from the raw options
-    file only if the cache is missing, stale, or force_rebuild=True.
-    This is what other scripts (correlation.py, backtest.py) should
-    import and call, rather than re-running the full pipeline.
-    """
     needs_rebuild = (
         force_rebuild
         or not os.path.exists(cache_path)
@@ -79,13 +71,13 @@ def get_atm_straddles(
 
     if not needs_rebuild:
         print(f"Using cached straddle file: {cache_path}")
-        return pd.read_csv(cache_path, parse_dates=["date", "exdate"])
+        return pd.read_parquet(cache_path)
 
     print("Rebuilding ATM straddle file from raw options data...")
     df = load_options_data(source_path)
     df = filter_valid_quotes(df)
     straddles = select_atm_straddle(df)
-    straddles.to_csv(cache_path, index=False)
+    straddles.to_parquet(cache_path, index=False)
     print(f"Saved {len(straddles):,} straddle rows to {cache_path}")
     return straddles
 
