@@ -1,0 +1,30 @@
+ticker,error
+ACE,Yahoo chart response missing close prices.
+AGN,HTTP Error 404: Not Found
+ALXN,HTTP Error 404: Not Found
+ANTM,HTTP Error 404: Not Found
+APC,HTTP Error 400: Bad Request
+ATVI,HTTP Error 404: Not Found
+BK,HTTP Error 404: Not Found
+BRCM,Yahoo chart response missing close prices.
+BRK,Yahoo chart response missing close prices.
+BXLT,Yahoo chart response missing close prices.
+CELG,HTTP Error 404: Not Found
+DWDP,HTTP Error 404: Not Found
+EA,HTTP Error 400: Bad Request
+EQR,HTTP Error 400: Bad Request
+FI,HTTP Error 404: Not Found
+MMC,HTTP Error 404: Not Found
+MON,HTTP Error 404: Not Found
+PCLN,HTTP Error 400: Bad Request
+PCP,Yahoo chart response missing close prices.
+PX,HTTP Error 404: Not Found
+PXD,HTTP Error 404: Not Found
+RAI,Yahoo chart response missing close prices.
+RTN,HTTP Error 404: Not Found
+TFCFA,HTTP Error 404: Not Found
+TWC,Yahoo chart response missing close prices.
+TWTR,HTTP Error 404: Not Found
+UTX,HTTP Error 404: Not Found
+WBA,HTTP Error 404: Not Found
+YHOO,HTTP Error 404: Not Found
