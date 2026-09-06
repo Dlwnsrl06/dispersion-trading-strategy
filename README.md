@@ -199,6 +199,26 @@ simplifications" for a third, related coverage effect (the DTE extraction
 window) that was investigated and found to be a data-source limitation
 rather than a bug.
 
+- **Z-score thresholds have been tuned via a chronological train/test split**,
+rather than picked by eye or grid-searched against the full sample and
+reported as-is. The 2015-10-01 to 2023-09-01 period (80% of the sample) was
+used to grid-search `ENTRY_ZSCORE`/`EXIT_ZSCORE` combinations; 2023-09-05 to
+2025-08-29 was held out purely to check the chosen combination wasn't
+overfit to the training window.
+
+`EXIT_ZSCORE=-0.5` dominated every entry value tested on train (best exit
+choice in all seven rows of the grid), a consistent effect rather than a
+lucky combination. `ENTRY_ZSCORE=1.25` was chosen from the middle of a flat
+performance plateau, entry values 1.00 through 2.00 all scored within about
+0.08 Sharpe of each other on train, rather than the single highest-scoring
+point (entry=1.75), which was supported by only 21 trades versus 28 at the
+chosen value and performed inconsistently between train (1.36) and test
+(1.52) in a way that pointed to noise rather than a real edge. The final
+choice, entry=1.25, held up more consistently across train (Sharpe 1.32) and
+test (Sharpe 1.12) than either neighboring value tested.
+
+`config.py` has been updated with `ENTRY_ZSCORE=1.25`, `EXIT_ZSCORE=-0.5`.
+
 ## Known simplifications
 
 - **Single average correlation.** Standard practice; see the note above.
