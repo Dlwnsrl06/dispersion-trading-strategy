@@ -146,14 +146,18 @@ known ρ from synthetic data).
 and reduced to `data/atm_straddles.csv`, and the point-in-time quarterly
 weights have been built in `data/quarterly_weights.csv`.
 
-**The historical glue exists now:** `historical_correlation_series.py` produces
-the implied and realized correlation *series* that `signal.py` and
-`backtest.py` take as input.
+**The historical glue exists and has been debugged:** `historical_correlation_series.py`
+produces the implied and realized correlation *series* that `signal.py` and
+`backtest.py` take as input. It has been run end to end against real
+historical closes and produces 2,493 daily rows from 2015-10-01 to
+2025-08-29, with a plausible spike in implied correlation during the March
+2020 COVID selloff.
 
 For each historical date, the glue script:
 
-1. Look up the quarter containing the date and pull that quarter's basket from
-   `data/quarterly_weights.csv`.
+1. Look up the quarter containing the date and pull the *prior* quarter's
+   basket from `data/quarterly_weights.csv` (see the point-in-time note
+   below for why it's the prior quarter, not the same one).
 2. Pull each ticker's and SPY's call/put IVs from `data/atm_straddles.csv`.
 3. Drop tickers with no usable quote that day and renormalize the remaining
    weights to sum to 1.
@@ -162,17 +166,38 @@ For each historical date, the glue script:
    using actual historical close/spot prices.
 6. Repeat across every available date to build the full time series.
 
-Steps 3–5 are exactly what `main.py` already does for a single date, so the
-cleanest approach is probably to factor that block out of `main.py` into a
-shared function both entry points call, rather than writing it twice.
+Steps 3–5 are exactly what `main.py` already does for a single date, and
+`correlation_snapshot.py` now factors that shared logic out so both entry
+points call the same function rather than duplicating it.
 
-**One methodological trap in that work:** `config.COMPONENT_WEIGHTS` holds
-*today's* SPY weights. Using them to backtest 2015 imports both look-ahead bias
-and survivorship bias — NVDA was not a top-10 name in 2015, and names that fell
-out of the index disappear entirely. `build_basket_universe.py` already ranks
-by market cap per quarter, so the point-in-time weights are recoverable from
-`DlyCap`; it just doesn't emit them yet, only the ticker superset. Worth
-extending it to write a quarter-by-quarter weights table.
+**Two point-in-time bugs were found and fixed while validating this output:**
+
+- **Quarter lookup was off by one.** `quarterly_weights.csv`'s market cap
+  (`DlyCap`) for a quarter is measured on the *last trading day* of that
+  quarter, so a naive `date -> same-quarter weights` lookup was using
+  end-of-quarter market cap to weight trading days earlier in that same
+  quarter, before the cap was observable. `_quarter_for_date()` now looks up
+  the *prior* quarter's weights instead, so each weight vector only applies
+  to dates after its snapshot was taken. This pushes the usable start of the
+  series from 2015-08-28 to 2015-10-01, since there's no valid prior-quarter
+  weight vector before that.
+- **Ticker labels didn't match across renamed entities.** `quarterly_weights.csv`
+  (CRSP-sourced) updates ticker labels at the actual corporate action date
+  (FB → META, ANTM → ELV, PCLN → BKNG, FISV → FI, UTX/RTN → RTX post-merger,
+  DWDP → DD), but `atm_straddles.csv` (OptionMetrics-sourced) keeps one fixed
+  label per secid across its whole history. Without reconciling these,
+  several large-cap positions silently dropped out of the implied-correlation
+  basket for years at a time with no error raised. `load_quarterly_weights()`
+  now applies a `TICKER_ALIASES` map and collapses any resulting
+  `(quarter, ticker)` duplicates (e.g. the DowDuPont merger transition
+  quarter, 2017Q3, where both `DWDP` and `DD` briefly appeared as separate
+  rows) by summing weight rather than letting one silently overwrite the
+  other.
+
+Both issues are now confirmed fixed against the real data; see "Known
+simplifications" for a third, related coverage effect (the DTE extraction
+window) that was investigated and found to be a data-source limitation
+rather than a bug.
 
 ## Known simplifications
 
@@ -180,6 +205,24 @@ extending it to write a quarter-by-quarter weights table.
 - **ATM options only.** Real dispersion desks trade the whole skew. A
   skew-aware version (variance-swap replication across a strip of strikes) is
   the natural extension once the ATM version works.
+- **Options data has a fixed DTE window from the source extraction.**
+  `options_historical_data_full.csv` was pulled from WRDS with a 20-40 day
+  days-to-expiry filter applied at extraction time, so `atm_straddles.csv`
+  only ever contains DTE values between 21 and 39. Widening
+  `config.MIN_DAYS_TO_EXPIRY`/`MAX_DAYS_TO_EXPIRY` beyond that range has no
+  effect, since there's no data outside it to select from. Because
+  monthly-only equity option expiries are spaced roughly 28-35 calendar days
+  apart, wider than this 18-day window, names without weekly listings
+  periodically have zero contracts available for a stretch of each monthly
+  cycle. This shows up as `num_components` cycling between roughly 110 and
+  143 (out of a 150-name basket) on a regular monthly rhythm throughout the
+  full 2015-2025 sample. It's a structural property of the source data, not
+  a code bug: coverage never drops below the `min_components=50` floor, so
+  no dates are lost, and the effect is quantified and consistent rather than
+  random. Closing it fully would require re-extracting
+  `options_historical_data_full.csv` from WRDS with a wider DTE window
+  (something like 15-55), which wasn't done here given the scope of the
+  project; it's a natural next step if the data pipeline is revisited.
 - **Backtest is a notional-scaled approximation.** It doesn't hold actual
   option positions, roll at expiry, or model assignment, margin, or bid-ask.
   Real position-level tracking is where most of the remaining difficulty lives.
@@ -196,18 +239,13 @@ extending it to write a quarter-by-quarter weights table.
 
 ## Build order
 
-1. ~~Get `main.py` running end to end on live data.~~ Done.
-2. ~~Harden the live snapshot pipeline.~~ Done.
-3. Sanity check the live implied correlation against CBOE's published implied
-   correlation index — directionally, not exactly, since methodology differs.
-4. ~~Source and clean historical options data.~~ Done (WRDS/IvyDB).
-5. ~~Build point-in-time quarterly weights.~~ Done.
-6. ~~Write the glue that turns `atm_straddles.csv` and
-   `quarterly_weights.csv` into implied and realized correlation series.~~ Done.
-7. **← current step.** Run `historical_correlation_series.py` with real
-   historical closes, then run `signal.py` and `backtest.py` and tune the
-   thresholds, which are still placeholders.
-8. Compute performance metrics comparable to the GARCH project: Sharpe, max
+7. ~~Run `historical_correlation_series.py` with real historical closes and
+   validate the output.~~ Done. Found and fixed a look-ahead bias in the
+   quarterly weight lookup and a ticker-labeling mismatch across renamed
+   entities; documented a source-data DTE coverage limitation.
+8. **← current step.** Run `signal.py` and `backtest.py` and tune the
+   z-score thresholds, which are still placeholders.
+9. Compute performance metrics comparable to the GARCH project: Sharpe, max
    drawdown, and Calmar.
-9. Production-awareness stretch: convert the large CSVs to Parquet.
-10. Longer-term stretch: extend the backtest toward real position-level P&L.
+10. Production-awareness stretch: convert the large CSVs to Parquet.
+11. Longer-term stretch: extend the backtest toward real position-level P&L.
