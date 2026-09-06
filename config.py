@@ -71,5 +71,5 @@ SIGNAL_ZSCORE_WINDOW = 60
 
 # Entry/exit thresholds on the z-scored spread. These are placeholders,
 # tune them once you have real historical output to look at.
-ENTRY_ZSCORE = 1.0
-EXIT_ZSCORE = 0.0
+ENTRY_ZSCORE = 1.25
+EXIT_ZSCORE = -0.5
