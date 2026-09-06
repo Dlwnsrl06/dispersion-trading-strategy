@@ -2,5 +2,4 @@ data/Historical_SPY_Components.csv
 data/backup_data/
 data/options_historical_data_full.csv
 data/atm_straddles.csv
-data/atm_straddles.parquet
-data/options_historical_data_full.parquet
+*.parquet
