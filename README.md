@@ -300,7 +300,7 @@ Output was confirmed byte-identical before and after the switch by rerunning
 
 ## Known simplifications
 
-- **Single average correlation.** Standard practice; see the note above.
+- **Single average correlation.** Standard industry practice; see the note above.
 - **ATM options only.** Real dispersion desks trade the whole skew. A
   skew-aware version (variance-swap replication across a strip of strikes) is
   the natural extension once the ATM version works.
