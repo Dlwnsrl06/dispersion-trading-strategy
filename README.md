@@ -1,6 +1,6 @@
 # Dispersion Trading Pipeline
 
-An index-vs-component correlation dispersion strategy: sell index implied
+An index-vs-component correlation dispersion trading strategy: sell index implied
 volatility, buy a weighted basket of component implied volatility, betting that
 realized correlation across the basket comes in lower than what index options
 price in.
