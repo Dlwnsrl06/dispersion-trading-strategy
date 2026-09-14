@@ -2,7 +2,7 @@
 
 An index-vs-component correlation dispersion trading strategy: sell index implied
 volatility, buy a weighted basket of component implied volatility, betting that
-realized correlation across the basket comes in lower than what index options
+realized correlation across the whole basket comes in lower than what index options
 price in.
 
 Based on Driessen, J., Maenhout, P. J., & Vilkov, G. (2009), "The Price of
