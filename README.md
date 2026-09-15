@@ -25,7 +25,7 @@ sample; see "Current status" for methodology.
 | Round-trip trades | 36 |
 | Days in position | 947 / 2,493 (38%) |
 
-Implied correlation spiked to roughly 0.83 during the March 2020 COVID
+Implied correlation spiked to approx. 0.83 during the March 2020 COVID
 selloff, in line with the well-documented pattern of realized correlation
 briefly overshooting implied during systemic panics, a useful sanity check
 that the pipeline is capturing something real rather than an artifact.
